@@ -41,7 +41,7 @@ else:
     start_date, end_date = min_date, max_date
 
 start_date = pd.to_datetime(start_date)
-end_date = pd.to_datetime(end_date)
+end_date   = pd.to_datetime(end_date)
 
 df_filtered = df[
     (df["Tanggal"] >= start_date) &
@@ -57,8 +57,8 @@ st.divider()
 st.subheader("📋 Ringkasan")
 
 total_transaksi = df_filtered["No SO"].nunique()
-total_omzet = df_filtered["Total Tagihan"].sum()
-rata_omzet = total_omzet / total_transaksi if total_transaksi > 0 else 0
+total_omzet     = df_filtered["Total Tagihan"].sum()
+rata_omzet      = total_omzet / total_transaksi if total_transaksi > 0 else 0
 
 col1, col2, col3 = st.columns(3)
 col1.metric("Total Transaksi", f"{total_transaksi:,}")
@@ -94,6 +94,20 @@ ax[1].tick_params(axis="x", rotation=45)
 plt.tight_layout()
 st.pyplot(fig)
 
+# Insight tren bulanan
+bulan_omzet_tertinggi     = tren_bulanan.loc[tren_bulanan["total_pendapatan"].idxmax()]
+bulan_transaksi_tertinggi = tren_bulanan.loc[tren_bulanan["total_transaksi"].idxmax()]
+bulan_omzet_terendah      = tren_bulanan.loc[tren_bulanan["total_pendapatan"].idxmin()]
+
+st.caption(
+    f"💡 Pendapatan tertinggi terjadi pada bulan **{bulan_omzet_tertinggi['Bulan']}** "
+    f"sebesar **Rp {bulan_omzet_tertinggi['total_pendapatan']:,.0f}**. "
+    f"Transaksi terbanyak pada bulan **{bulan_transaksi_tertinggi['Bulan']}** "
+    f"dengan **{bulan_transaksi_tertinggi['total_transaksi']} transaksi**. "
+    f"Bulan dengan pendapatan terendah adalah **{bulan_omzet_terendah['Bulan']}** "
+    f"sebesar **Rp {bulan_omzet_terendah['total_pendapatan']:,.0f}**."
+)
+
 st.divider()
 
 # ── 2. Top 10 Produk Terlaris ─────────────────────────────────
@@ -112,6 +126,17 @@ ax.set_xlabel("Total Qty")
 ax.set_ylabel(None)
 plt.tight_layout()
 st.pyplot(fig)
+
+# Insight produk
+produk_terlaris = top_produk.iloc[0]
+produk_ke2      = top_produk.iloc[1]
+
+st.caption(
+    f"💡 Produk terlaris adalah **{produk_terlaris['Nama Produk']}** "
+    f"dengan total **{produk_terlaris['total_qty']:,.0f} qty** terjual. "
+    f"Diikuti oleh **{produk_ke2['Nama Produk']}** "
+    f"dengan **{produk_ke2['total_qty']:,.0f} qty**."
+)
 
 st.divider()
 
@@ -139,8 +164,8 @@ with col1:
     st.pyplot(fig)
 
 with col2:
-    fig, ax = plt.subplots(figsize=(8, 5))
     omzet_sales_rata = omzet_sales.sort_values("rata_per_transaksi", ascending=False)
+    fig, ax = plt.subplots(figsize=(8, 5))
     colors2 = ["#72BCD4"] + ["#D3D3D3"] * (len(omzet_sales_rata) - 1)
     sns.barplot(x="rata_per_transaksi", y="Nama Sales", data=omzet_sales_rata,
                 palette=colors2, ax=ax, hue="Nama Sales", legend=False)
@@ -149,6 +174,21 @@ with col2:
     ax.set_ylabel(None)
     plt.tight_layout()
     st.pyplot(fig)
+
+# Insight sales
+sales_omzet_tertinggi = omzet_sales.iloc[0]
+sales_omzet_terendah  = omzet_sales.iloc[-1]
+sales_rata_tertinggi  = omzet_sales_rata.iloc[0]
+
+st.caption(
+    f"💡 Sales dengan omzet tertinggi adalah **{sales_omzet_tertinggi['Nama Sales']}** "
+    f"sebesar **Rp {sales_omzet_tertinggi['total_omzet']:,.0f}** "
+    f"dari **{sales_omzet_tertinggi['total_transaksi']} transaksi**. "
+    f"Sales paling efisien per transaksi adalah **{sales_rata_tertinggi['Nama Sales']}** "
+    f"dengan rata-rata **Rp {sales_rata_tertinggi['rata_per_transaksi']:,.0f} per transaksi**. "
+    f"Sales dengan omzet terendah adalah **{sales_omzet_terendah['Nama Sales']}** "
+    f"sebesar **Rp {sales_omzet_terendah['total_omzet']:,.0f}**."
+)
 
 st.divider()
 
@@ -170,6 +210,19 @@ ax.set_ylabel(None)
 plt.tight_layout()
 st.pyplot(fig)
 
+# Insight kategori
+kategori_tertinggi = omzet_kategori.iloc[0]
+kategori_terendah  = omzet_kategori.iloc[-1]
+pct_kategori_utama = kategori_tertinggi["total_omzet"] / omzet_kategori["total_omzet"].sum() * 100
+
+st.caption(
+    f"💡 Kategori **{kategori_tertinggi['Kategori Produk']}** mendominasi omzet "
+    f"sebesar **Rp {kategori_tertinggi['total_omzet']:,.0f}** "
+    f"({pct_kategori_utama:.1f}% dari total omzet). "
+    f"Kategori dengan omzet terendah adalah **{kategori_terendah['Kategori Produk']}** "
+    f"sebesar **Rp {kategori_terendah['total_omzet']:,.0f}**."
+)
+
 st.divider()
 
 # ── 5. Status Pengiriman ──────────────────────────────────────
@@ -187,6 +240,22 @@ ax.set_xlabel("Jumlah Transaksi")
 ax.set_ylabel(None)
 plt.tight_layout()
 st.pyplot(fig)
+
+# Insight status pengiriman
+belum_terkirim   = status_kirim[status_kirim["status"] == "Belum Terkirim"]["jumlah"].values
+diterima         = status_kirim[status_kirim["status"] == "Diterima Customer"]["jumlah"].values
+total_status     = status_kirim["jumlah"].sum()
+
+belum_terkirim_n = int(belum_terkirim[0]) if len(belum_terkirim) > 0 else 0
+diterima_n       = int(diterima[0]) if len(diterima) > 0 else 0
+pct_belum        = belum_terkirim_n / total_status * 100
+pct_diterima     = diterima_n / total_status * 100
+
+st.caption(
+    f"💡 Dari total **{total_status} transaksi**, sebanyak **{belum_terkirim_n} transaksi "
+    f"({pct_belum:.1f}%) belum terkirim** — perlu segera ditindaklanjuti! "
+    f"Sedangkan **{diterima_n} transaksi ({pct_diterima:.1f}%)** sudah diterima customer."
+)
 
 st.divider()
 
@@ -206,6 +275,19 @@ ax.set_xlabel("Total Omzet (Rp)")
 ax.set_ylabel(None)
 plt.tight_layout()
 st.pyplot(fig)
+
+# Insight provinsi
+provinsi_tertinggi = omzet_provinsi.iloc[0]
+provinsi_ke2       = omzet_provinsi.iloc[1]
+pct_provinsi_utama = provinsi_tertinggi["total_omzet"] / omzet_provinsi["total_omzet"].sum() * 100
+
+st.caption(
+    f"💡 Provinsi dengan omzet tertinggi adalah **{provinsi_tertinggi['Provinsi']}** "
+    f"sebesar **Rp {provinsi_tertinggi['total_omzet']:,.0f}** "
+    f"({pct_provinsi_utama:.1f}% dari total omzet). "
+    f"Diikuti oleh **{provinsi_ke2['Provinsi']}** "
+    f"sebesar **Rp {provinsi_ke2['total_omzet']:,.0f}**."
+)
 
 st.divider()
 st.caption("© Dashboard Penjualan 2026")
