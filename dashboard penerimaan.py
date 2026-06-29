@@ -28,7 +28,7 @@ def load_pembelian():
 
 @st.cache_data
 def load_penerimaan():
-    df = pd.read_csv("data_penerimaan_bersih.csv")
+    df = pd.read_csv("data_Penerimaan_bersih.csv")
     df["Tanggal Penerimaan"] = pd.to_datetime(df["Tanggal Penerimaan"])
     return df
 
@@ -488,6 +488,10 @@ with tab3:
     plt.xticks(rotation=75)
     plt.tight_layout()
     st.pyplot(fig)
+    st.caption(
+        f"💡 Vendor dengan penerimaan terbesar adalah **{vendor_qty.index[0]}** "
+        f"dengan **{vendor_qty.iloc[0]:,.0f} unit**."
+    )
     st.divider()
 
     # 2. Total Qty Penerimaan per Kategori Produk
@@ -505,6 +509,13 @@ with tab3:
     plt.xticks(rotation=20)
     plt.tight_layout()
     st.pyplot(fig)
+
+    pct_kategori = kategori_df.iloc[0]["Total Qty"] / kategori_df["Total Qty"].sum() * 100
+    st.caption(
+        f"💡 Kategori **{kategori_df.iloc[0]['Kategori Produk']}** mendominasi penerimaan "
+        f"sebesar **{kategori_df.iloc[0]['Total Qty']:,.0f} unit** "
+        f"({pct_kategori:.1f}% dari total qty diterima)."
+    )
     st.divider()
 
     # 3. Tren Total Qty Penerimaan Harian
@@ -522,6 +533,12 @@ with tab3:
     plt.xticks(rotation=45)
     plt.tight_layout()
     st.pyplot(fig)
+
+    hari_qty_tertinggi = tren_harian.loc[tren_harian["total_qty"].idxmax()]
+    st.caption(
+        f"💡 Qty penerimaan tertinggi terjadi pada **{hari_qty_tertinggi['Tanggal Penerimaan'].date()}** "
+        f"sebesar **{hari_qty_tertinggi['total_qty']:,.0f} unit**."
+    )
     st.divider()
 
     # 4. Persentase Status QC Produk
@@ -535,6 +552,13 @@ with tab3:
     ax.set_title("Persentase Status QC Produk")
     plt.tight_layout()
     st.pyplot(fig)
+
+    tidak_lolos = qc_df[qc_df["Kondisi Produk"] == "Tidak Lolos"]["Jumlah"].values
+    tidak_lolos_n = int(tidak_lolos[0]) if len(tidak_lolos) > 0 else 0
+    st.caption(
+        f"💡 Sebanyak **{tidak_lolos_n} produk tidak lolos QC** dari total "
+        f"**{qc_df['Jumlah'].sum()} produk** yang diperiksa."
+    )
 
 st.divider()
 st.caption("© Dashboard Penjualan, Pembelian & Penerimaan 2026")
