@@ -481,7 +481,7 @@ with tab3:
     vendor_qty = df_terima.groupby("Nama Vendor")["Qty"].sum().sort_values(ascending=False)
 
     fig, ax = plt.subplots(figsize=(10, 5))
-    vendor_qty.plot(kind="bar", color="Blues_r", ax=ax)
+    vendor_qty.plot(kind="bar", color="steelblue", ax=ax)
     ax.set_title("Total Qty Penerimaan per Vendor")
     ax.set_ylabel("Total Qty")
     ax.set_xlabel("Vendor")
