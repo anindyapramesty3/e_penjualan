@@ -28,7 +28,7 @@ def load_pembelian():
 
 @st.cache_data
 def load_penerimaan():
-    df = pd.read_csv("data_penerimaan_bersih.csv")
+    df = pd.read_csv("data_Penerimaan_bersih.csv")
     df["Tanggal Penerimaan"] = pd.to_datetime(df["Tanggal Penerimaan"])
     return df
 
@@ -476,150 +476,65 @@ with tab2:
 # ══════════════════════════════════════════════════════════════
 with tab3:
 
-    # KPI
-    st.subheader("📋 Ringkasan Penerimaan")
-    total_transaksi_terima = len(df_terima)
-    total_qty_terima       = df_terima["Qty"].sum()
-    pct_lolos_qc            = (df_terima["Kondisi Produk"] == "Lolos").mean() * 100 if total_transaksi_terima > 0 else 0
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Transaksi", f"{total_transaksi_terima:,}")
-    col2.metric("Total Qty Diterima", f"{total_qty_terima:,.0f}")
-    col3.metric("Persentase Lolos QC", f"{pct_lolos_qc:.1f}%")
-    st.divider()
-
-    # 1. Tren Penerimaan per Bulan
-    st.subheader("📈 Tren Penerimaan per Bulan")
-    df_terima["Bulan"] = df_terima["Tanggal Penerimaan"].dt.to_period("M")
-    tren_terima = df_terima.groupby("Bulan").agg(
-        total_transaksi=("Qty", "count"),
-        total_qty=("Qty", "sum")
-    ).reset_index()
-    tren_terima["Bulan"] = tren_terima["Bulan"].astype(str)
-
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(12, 8))
-    ax[0].plot(tren_terima["Bulan"], tren_terima["total_transaksi"],
-               marker="o", linewidth=2, color="#72BCD4")
-    ax[0].set_title("Jumlah Transaksi Penerimaan per Bulan", fontsize=14)
-    ax[0].set_ylabel("Jumlah Transaksi")
-    ax[0].tick_params(axis="x", rotation=45)
-
-    ax[1].plot(tren_terima["Bulan"], tren_terima["total_qty"],
-               marker="o", linewidth=2, color="#F4A460")
-    ax[1].set_title("Total Qty Diterima per Bulan", fontsize=14)
-    ax[1].set_ylabel("Total Qty")
-    ax[1].tick_params(axis="x", rotation=45)
-    plt.tight_layout()
-    st.pyplot(fig)
-
-    bulan_qty_tertinggi = tren_terima.loc[tren_terima["total_qty"].idxmax()]
-    st.caption(
-        f"💡 Qty penerimaan tertinggi pada bulan **{bulan_qty_tertinggi['Bulan']}** "
-        f"sebesar **{bulan_qty_tertinggi['total_qty']:,.0f} unit**."
-    )
-    st.divider()
-
-    # 2. Top 10 Vendor Penerimaan Terbesar
-    st.subheader("🏪 Top 10 Vendor Penerimaan Terbesar")
-    top_vendor_terima = df_terima.groupby("Nama Vendor").agg(
-        total_qty=("Qty", "sum"),
-        total_transaksi=("Qty", "count")
-    ).sort_values("total_qty", ascending=False).head(10).reset_index()
-
-    fig, ax = plt.subplots(figsize=(12, 6))
-    colors = ["#72BCD4"] + ["#D3D3D3"] * (len(top_vendor_terima) - 1)
-    sns.barplot(x="total_qty", y="Nama Vendor", data=top_vendor_terima,
-                palette=colors, hue="Nama Vendor", legend=False, ax=ax)
-    ax.set_title("Top 10 Vendor Penerimaan Terbesar (by Qty)", fontsize=14)
-    ax.set_xlabel("Total Qty")
-    ax.set_ylabel(None)
-    plt.tight_layout()
-    st.pyplot(fig)
-    st.caption(
-        f"💡 Vendor dengan penerimaan terbesar adalah **{top_vendor_terima.iloc[0]['Nama Vendor']}** "
-        f"dengan **{top_vendor_terima.iloc[0]['total_qty']:,.0f} unit**."
-    )
-    st.divider()
-
-    # 3. Penerimaan per Kategori Produk
-    st.subheader("📊 Penerimaan per Kategori Produk")
-    kategori_terima = df_terima.groupby("Kategori Produk").agg(
-        total_qty=("Qty", "sum")
-    ).sort_values("total_qty", ascending=False).reset_index()
+    # 1. Total Qty Penerimaan per Vendor
+    st.subheader("📊 Total Qty Penerimaan per Vendor")
+    vendor_qty = df_terima.groupby("Nama Vendor")["Qty"].sum().sort_values(ascending=False)
 
     fig, ax = plt.subplots(figsize=(10, 5))
-    colors = ["#72BCD4"] + ["#D3D3D3"] * (len(kategori_terima) - 1)
-    sns.barplot(x="total_qty", y="Kategori Produk", data=kategori_terima,
-                palette=colors, hue="Kategori Produk", legend=False, ax=ax)
-    ax.set_title("Penerimaan per Kategori Produk", fontsize=14)
-    ax.set_xlabel("Total Qty")
-    ax.set_ylabel(None)
+    vendor_qty.plot(kind="bar", color="steelblue", ax=ax)
+    ax.set_title("Total Qty Penerimaan per Vendor")
+    ax.set_ylabel("Total Qty")
+    ax.set_xlabel("Vendor")
+    plt.xticks(rotation=75)
     plt.tight_layout()
     st.pyplot(fig)
-
-    pct_kategori = kategori_terima.iloc[0]["total_qty"] / kategori_terima["total_qty"].sum() * 100
-    st.caption(
-        f"💡 Kategori **{kategori_terima.iloc[0]['Kategori Produk']}** mendominasi penerimaan "
-        f"sebesar **{kategori_terima.iloc[0]['total_qty']:,.0f} unit** "
-        f"({pct_kategori:.1f}% dari total qty diterima)."
-    )
     st.divider()
 
-    # 4. Status Kondisi Produk (QC)
-    st.subheader("✅ Status Kondisi Produk (QC)")
-    qc_terima = df_terima["Kondisi Produk"].value_counts().reset_index()
-    qc_terima.columns = ["status", "jumlah"]
+    # 2. Total Qty Penerimaan per Kategori Produk
+    st.subheader("📊 Total Qty Penerimaan per Kategori Produk")
+    kategori_qty = df_terima.groupby("Kategori Produk")["Qty"].sum().sort_values(ascending=False)
+    kategori_df = kategori_qty.reset_index()
+    kategori_df.columns = ["Kategori Produk", "Total Qty"]
 
-    col1, col2 = st.columns(2)
-    with col1:
-        fig, ax = plt.subplots(figsize=(6, 5))
-        colors = ["#72BCD4"] + ["#D3D3D3"] * (len(qc_terima) - 1)
-        ax.pie(qc_terima["jumlah"], labels=qc_terima["status"], autopct="%1.1f%%", colors=colors)
-        ax.set_title("Persentase Status QC", fontsize=13)
-        plt.tight_layout()
-        st.pyplot(fig)
-
-    with col2:
-        fig, ax = plt.subplots(figsize=(6, 5))
-        colors = ["#72BCD4"] + ["#D3D3D3"] * (len(qc_terima) - 1)
-        sns.barplot(x="jumlah", y="status", data=qc_terima,
-                    palette=colors, hue="status", legend=False, ax=ax)
-        ax.set_title("Jumlah Produk per Status QC", fontsize=13)
-        ax.set_xlabel("Jumlah Produk")
-        ax.set_ylabel(None)
-        plt.tight_layout()
-        st.pyplot(fig)
-
-    tidak_lolos = qc_terima[qc_terima["status"] == "Tidak Lolos"]["jumlah"].values
-    tidak_lolos_n = int(tidak_lolos[0]) if len(tidak_lolos) > 0 else 0
-    st.caption(
-        f"💡 Sebanyak **{tidak_lolos_n} produk tidak lolos QC** dari total "
-        f"**{qc_terima['jumlah'].sum()} produk** yang diperiksa."
-    )
-    st.divider()
-
-    # 5. Status Checklist Keuangan
-    st.subheader("💰 Status Checklist Keuangan")
-    checklist_terima = df_terima["Checklist Keuangan"].value_counts().reset_index()
-    checklist_terima.columns = ["status", "jumlah"]
-
-    fig, ax = plt.subplots(figsize=(8, 4))
-    colors = ["#72BCD4"] + ["#D3D3D3"] * (len(checklist_terima) - 1)
-    sns.barplot(x="jumlah", y="status", data=checklist_terima,
-                palette=colors, hue="status", legend=False, ax=ax)
-    ax.set_title("Status Checklist Keuangan", fontsize=14)
-    ax.set_xlabel("Jumlah Transaksi")
-    ax.set_ylabel(None)
+    fig, ax = plt.subplots(figsize=(6, 5))
+    sns.barplot(data=kategori_df, x="Kategori Produk", y="Total Qty",
+                hue="Kategori Produk", palette="Set2", legend=False, ax=ax)
+    ax.set_title("Total Qty Penerimaan per Kategori Produk")
+    ax.set_ylabel("Total Qty")
+    ax.set_xlabel("")
+    plt.xticks(rotation=20)
     plt.tight_layout()
     st.pyplot(fig)
+    st.divider()
 
-    belum_checklist = checklist_terima[checklist_terima["status"] == False]["jumlah"].values
-    belum_checklist_n = int(belum_checklist[0]) if len(belum_checklist) > 0 else 0
-    pct_belum_checklist = belum_checklist_n / checklist_terima["jumlah"].sum() * 100
-    st.caption(
-        f"💡 Sebanyak **{belum_checklist_n} transaksi ({pct_belum_checklist:.1f}%) belum "
-        f"diverifikasi keuangan** — perlu segera ditindaklanjuti!"
-    )
+    # 3. Tren Total Qty Penerimaan Harian
+    st.subheader("📈 Tren Total Qty Penerimaan Harian")
+    tren_harian = df_terima.groupby("Tanggal Penerimaan").agg(
+        total_qty=("Qty", "sum")
+    ).reset_index()
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    sns.lineplot(data=tren_harian, x="Tanggal Penerimaan", y="total_qty",
+                 marker="o", color="darkorange", ax=ax)
+    ax.set_title("Tren Total Qty Penerimaan Harian")
+    ax.set_ylabel("Total Qty")
+    ax.set_xlabel("Tanggal")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    st.pyplot(fig)
+    st.divider()
+
+    # 4. Persentase Status QC Produk
+    st.subheader("✅ Persentase Status QC Produk")
+    qc_df = df_terima["Kondisi Produk"].value_counts().reset_index()
+    qc_df.columns = ["Kondisi Produk", "Jumlah"]
+
+    fig, ax = plt.subplots(figsize=(5, 5))
+    colors = sns.color_palette("Set2")[:len(qc_df)]
+    ax.pie(qc_df["Jumlah"], labels=qc_df["Kondisi Produk"], autopct="%1.1f%%", colors=colors)
+    ax.set_title("Persentase Status QC Produk")
+    plt.tight_layout()
+    st.pyplot(fig)
 
 st.divider()
 st.caption("© Dashboard Penjualan, Pembelian & Penerimaan 2026")
