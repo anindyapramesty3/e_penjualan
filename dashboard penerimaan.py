@@ -28,7 +28,7 @@ def load_pembelian():
 
 @st.cache_data
 def load_penerimaan():
-    df = pd.read_csv("data_Penerimaan_bersih.csv")
+    df = pd.read_csv("data_penerimaan_bersih.csv")
     df["Tanggal Penerimaan"] = pd.to_datetime(df["Tanggal Penerimaan"])
     return df
 
